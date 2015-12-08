@@ -10,5 +10,39 @@ repositories {
 dependencies {
     // test
     testCompile 'junit:junit:4.12'
-
 }
+
+class DownloadCsvZipTask extends DefaultTask {
+    @Input
+    def downloadUrl
+
+    @Input
+    def filename
+
+    @OutputDirectory
+    def outputDir
+
+    @TaskAction
+    void download() {
+        outputDir.mkdirs()
+        new File(outputDir, filename).withOutputStream { out ->
+            out << new URL(downloadUrl).openStream()
+        }
+    }
+}
+
+task downloadCsvZip(type: DownloadCsvZipTask) {
+    downloadUrl =  "https://www.dropbox.com/s/jd2b622ktfzn9lc/sell_cvs.zip?dl=1"
+    outputDir = new File("${buildDir}/zips/")
+    filename = 'sell_cvs.zip'
+}
+
+task unzipCsv(type: Copy) {
+    def zipFile = file("${buildDir}/zips/sell_cvs.zip")
+    def outputDir = file("${buildDir}/classes/main")
+    from zipTree(zipFile)
+    into outputDir
+}
+
+unzipCsv.dependsOn(downloadCsvZip)
+compileJava.dependsOn(unzipCsv)
